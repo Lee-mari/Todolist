@@ -122,6 +122,12 @@
       body += `<button class="sub-sum" data-act="toggleExpand" data-id="${it.id}">${SQ.segBar(it.done ? subs.length : sd, subs.length, 8)} 쪼갠 할 일 ${it.done ? subs.length : sd} / ${subs.length}${it.done || sd === subs.length ? ' 다 했어요' : ''} ${icon('chevD', 14)}</button>`;
 
     const foot = [];
+    (it.links || []).forEach((l) => {
+      const url = SQ.safeUrl(l.url);
+      if (!url) return;
+      const yt = SQ.ytId && SQ.ytId(url);
+      foot.push(`<a class="chip-btn linkc" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}">${icon(yt ? 'video' : 'link', 15)}<span>${esc(l.name || SQ.platformOf(url))}</span>${icon('arrowR', 13, 'ext')}</a>`);
+    });
     if (lec) foot.push(`<button class="chip-btn lec" data-act="openLecture" data-lid="${lec.id}">${icon('notebook', 15)} 강의 노트 열기</button>`);
     if (!expanded && !subs.length && !it.done) foot.push(`<button class="chip-btn dashed" data-act="addSub" data-id="${it.id}">${icon('plus', 14)} 쪼개기</button>`);
 
@@ -359,8 +365,16 @@
       desc: pre.desc || '',
       subtasks: pre.subtasks || [],
       lectureId: pre.lectureId || '',
+      links: pre.links || [],
     };
     const lecOpts = lectureOptions(v.lectureId);
+    const linkRow = (l) => `
+      <div class="link-row">
+        <input class="input" name="linkName" maxlength="60" value="${esc(l.name || '')}" placeholder="이름 (예: UE5.7 Starter 1편)" aria-label="링크 이름">
+        <input class="input" name="linkUrl" inputmode="url" value="${esc(l.url || '')}" placeholder="https://youtube.com/..." aria-label="링크 주소">
+        <button type="button" class="icon-btn" data-dellink aria-label="링크 빼기">${icon('x', 16)}</button>
+      </div>`;
+    const watchVids = (SQ.state.videos || []).filter((x) => x.url && x.status !== 'done');
     SQ.modal.open({
       title: it ? '일정 수정' : '일정 추가',
       sub: SQ.longDate(k),
@@ -389,6 +403,14 @@
           <label class="field"><span>과목</span><select class="input" name="subjectId">${SQ.subjectOptions(v.subjectId)}</select></label>
           <label class="field new-subj" hidden><span>새 과목 이름</span><input class="input" name="newSubject" maxlength="20" placeholder="예: 수학"></label>
           <label class="field"><span>공부 내용 <em>선택</em></span><textarea class="input" name="desc" rows="2" maxlength="300" placeholder="무엇을 공부할지 한 줄로">${esc(v.desc)}</textarea></label>
+          <div class="field">
+            <span>강의 · 영상 링크 <em>선택 · 이름은 직접 정해요</em></span>
+            <div class="links-ed">${(v.links || []).map(linkRow).join('')}</div>
+            <div class="row wrap">
+              <button type="button" class="chip-btn dashed" data-addlink>${icon('plus', 14)} 링크 추가</button>
+              ${watchVids.length ? `<select class="input sm pick-video" aria-label="영상 진도에서 가져오기"><option value="">영상 진도에서 가져오기…</option>${watchVids.map((x) => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select>` : ''}
+            </div>
+          </div>
           <label class="field"><span>쪼갠 할 일 <em>한 줄에 하나씩</em></span><textarea class="input" name="subs" rows="3" placeholder="WBP_HUD 위젯 만들기&#10;캔버스 패널에 게이지 놓기">${esc((v.subtasks || []).map((s) => s.text).join('\n'))}</textarea></label>
           ${lecOpts ? `<label class="field"><span>강의 노트 연결 <em>선택</em></span><select class="input" name="lectureId">${lecOpts}</select></label>` : ''}
         </div>
@@ -419,6 +441,27 @@
             form.end.value = SQ.fromMin(SQ.toMin(form.start.value || '09:00') + +b.dataset.dur);
           })
         );
+        const box = form.querySelector('.links-ed');
+        const addRow = (l) => {
+          box.insertAdjacentHTML('beforeend', linkRow(l || {}));
+          return box.lastElementChild;
+        };
+        form.querySelector('[data-addlink]').addEventListener('click', () => addRow().querySelector('[name=linkName]').focus());
+        box.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-dellink]');
+          if (b) b.closest('.link-row').remove();
+        });
+        const pick = form.querySelector('.pick-video');
+        if (pick)
+          pick.addEventListener('change', () => {
+            const x = watchVids.find((w) => w.id === pick.value);
+            if (x) {
+              addRow({ name: x.title, url: SQ.resumeUrl ? SQ.resumeUrl(x) : x.url });
+              if (!form.title.value.trim()) form.title.value = x.title;
+              if (form.subjectId.value === '' && x.subjectId) form.subjectId.value = x.subjectId;
+            }
+            pick.value = '';
+          });
       },
       onSubmit(d) {
         const isBreak = d.kind === 'break';
@@ -427,6 +470,17 @@
         if (!d.date) return '날짜를 골라 주세요';
         if (!d.start || !d.end) return '시작과 끝 시간을 정해 주세요';
         if (SQ.toMin(d.end) <= SQ.toMin(d.start)) return '끝 시간이 시작 시간보다 늦어야 해요';
+        const names = [].concat(d.linkName || []), urls = [].concat(d.linkUrl || []);
+        const links = [];
+        if (!isBreak) {
+          for (let i = 0; i < urls.length; i++) {
+            const raw = String(urls[i] || '').trim(), name = String(names[i] || '').trim();
+            if (!raw && !name) continue;
+            const url = SQ.safeUrl(raw);
+            if (!url) return `${name ? `‘${name}’ ` : ''}링크 주소를 확인해 주세요 (https://로 시작하는 주소)`;
+            links.push({ name: name || SQ.platformOf(url) + ' 링크', url });
+          }
+        }
         const subId = isBreak ? '' : SQ.resolveSubject(d);
         if (d.subjectId === '__new' && !subId) return '새 과목 이름을 적어 주세요';
         const lines = isBreak ? [] : String(d.subs || '').split('\n').map((x) => x.trim()).filter(Boolean);
@@ -444,6 +498,7 @@
           desc: isBreak ? '' : (d.desc || '').trim(),
           subtasks,
           lectureId: isBreak ? '' : d.lectureId || '',
+          links,
         };
         let overlap = false;
         SQ.commit((S) => {

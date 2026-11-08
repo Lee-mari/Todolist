@@ -76,6 +76,11 @@
       return v.url;
     }
   }
+  SQ.safeUrl = safeUrl;
+  SQ.ytId = ytId;
+  SQ.platformOf = platform;
+  SQ.resumeUrl = resumeUrl;
+
   const pct = (v) => (v.status === 'done' ? 100 : v.lengthSec && v.posSec ? Math.min(100, Math.round((v.posSec / v.lengthSec) * 100)) : 0);
 
   const videos = () => SQ.state.videos || (SQ.state.videos = []);
@@ -513,7 +518,7 @@
     const items = [
       { label: '자세히 · 수정', icon: 'pencil', run: () => editVideoModal(id) },
       v.status !== 'done' ? { label: '멈춘 곳 기록', icon: 'flag', run: () => logStopModal(id) } : null,
-      { label: '오늘 시간표에 넣기', icon: 'calendar', run: () => SQ.openItemModal({ k: SQ.today(), prefill: { title: v.title, subjectId: v.subjectId, desc: v.goal || (v.posSec ? `${SQ.fmtTime(v.posSec)}부터 이어 보기` : '') } }) },
+      { label: '오늘 시간표에 넣기', icon: 'calendar', run: () => SQ.openItemModal({ k: SQ.today(), prefill: { title: v.title, subjectId: v.subjectId, desc: v.goal || (v.posSec ? `${SQ.fmtTime(v.posSec)}부터 이어 보기` : ''), links: v.url ? [{ name: v.title, url: resumeUrl(v) }] : [] } }) },
       v.url ? { label: '이어 보기 링크 복사', icon: 'link', run: () => copy(resumeUrl(v)) } : null,
       '-',
       ...Object.keys(STATUS).filter((k) => k !== v.status).map((k) => ({ label: `‘${STATUS[k]}’으로 옮기기`, icon: 'arrowR', run: () => setStatus(id, k) })),

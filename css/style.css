@@ -826,3 +826,20 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; backgro
   .resume-mini .row .btn { flex: 1; }
   .vlogs li { grid-template-columns: 58px 1fr auto; }
 }
+
+/* ---------- schedule links ---------- */
+.links-ed { display: flex; flex-direction: column; gap: 8px; }
+.links-ed:empty { display: none; }
+.link-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 36px; gap: 8px; align-items: center; }
+.pick-video { width: auto; max-width: 240px; }
+.chip-btn.linkc { background: color-mix(in srgb, var(--c, var(--pink)) 13%, var(--card)); color: color-mix(in srgb, var(--c, var(--pink)) 70%, var(--ink)); max-width: 100%; min-width: 0; }
+.chip-btn.linkc span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.chip-btn.linkc .ext { transform: rotate(-45deg); opacity: .6; }
+.chip-btn.linkc:hover { background: color-mix(in srgb, var(--c, var(--pink)) 22%, var(--card)); }
+@media (max-width: 640px) {
+  .link-row { grid-template-columns: 1fr 36px; padding: 10px; border: 1.5px solid var(--line); border-radius: 12px; }
+  .link-row [name=linkName] { grid-column: 1; }
+  .link-row [name=linkUrl] { grid-column: 1; grid-row: 2; }
+  .link-row [data-dellink] { grid-column: 2; grid-row: 1 / span 2; }
+  .pick-video { max-width: 100%; flex: 1; }
+}
