@@ -50,11 +50,14 @@
       const r = SQ.route();
       if (r === 'week' || r === 'today') SQ.openItemModal({ k: r === 'today' ? SQ.today() : SQ.ui.selDate || SQ.today() });
       else if (r === 'board') SQ.actions.addCard({ dataset: { st: 'todo' } });
+      else if (r === 'watch') SQ.actions.addVideo();
     }
   });
 
   document.addEventListener('input', (e) => {
-    if (e.target.dataset && e.target.dataset.lf) SQ.inputHandlers.lecture(e.target);
+    const ds = e.target.dataset || {};
+    if (ds.lf) SQ.inputHandlers.lecture(e.target);
+    else if (ds.key && SQ.inputHandlers[ds.key]) SQ.inputHandlers[ds.key](e.target);
   });
   document.addEventListener('change', (e) => {
     const h = e.target.dataset && e.target.dataset.change;

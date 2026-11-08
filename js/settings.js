@@ -17,6 +17,7 @@
       ${SQ.pageHead('', 'Settings', '', '나에게 맞게 바꾸기')}
       <div class="rule"></div>
       <div class="set-grid">
+        ${SQ.syncSettings ? SQ.syncSettings() : ''}
         <section class="card set">
           <h3>${icon('user', 18)} 프로필</h3>
           <label class="field"><span>이름 <em>오늘 화면 인사말에 쓰여요</em></span>
