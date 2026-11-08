@@ -154,6 +154,11 @@
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     database: '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
     alert: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v0"/>',
+    video: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/>',
+    flag: '<path d="M5 21V4"/><path d="M5 4.5h11.5l-2.2 4 2.2 4H5"/>',
+    link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+    cloud: '<path d="M7 19h10.5a4.5 4.5 0 0 0 .6-9 6 6 0 0 0-11.6 1.5A3.8 3.8 0 0 0 7 19z"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
   };
   SQ.icon = (name, size = 18, cls = '') =>
@@ -174,6 +179,7 @@
     courses: [],
     lectures: [],
     records: {},
+    videos: [],
     timer: null,
   });
 
@@ -194,15 +200,16 @@
       SQ.firstRun = true;
     }
     SQ.housekeeping();
-    SQ.save();
+    SQ.save(true);
   };
 
-  SQ.save = function () {
+  SQ.save = function (quiet) {
     try {
       localStorage.setItem(KEY, JSON.stringify(SQ.state));
     } catch (e) {
       SQ.toast('브라우저 저장 공간에 저장하지 못했어요');
     }
+    if (SQ.onSaved && !quiet) SQ.onSaved();
   };
 
   // daily-repeat board cards come back to "할 일" the next day
@@ -350,6 +357,10 @@
       const cb = SQ.modal.cfg && SQ.modal.cfg.onClose;
       SQ.modal.cfg = null;
       if (cb) cb();
+      if (SQ.pendingRender && !SQ.modal.isOpen()) {
+        SQ.pendingRender = false;
+        SQ.render();
+      }
       if (SQ.modal.lastFocus && SQ.modal.lastFocus.focus) SQ.modal.lastFocus.focus();
     },
     isOpen() {
@@ -455,12 +466,13 @@
 
   /* ---------- router & render ---------- */
   SQ.NAV = [
-    { id: 'today', label: '오늘', icon: 'sun' },
-    { id: 'week', label: '이번 주', icon: 'calendar' },
-    { id: 'board', label: '공부 보드', icon: 'board' },
-    { id: 'lectures', label: '강의 노트', icon: 'notebook' },
-    { id: 'record', label: '공부 기록', icon: 'chart' },
-    { id: 'settings', label: '설정', icon: 'settings' },
+    { id: 'today', label: '오늘', short: '오늘', icon: 'sun' },
+    { id: 'week', label: '이번 주', short: '이번 주', icon: 'calendar' },
+    { id: 'board', label: '공부 보드', short: '보드', icon: 'board' },
+    { id: 'watch', label: '영상 진도', short: '영상', icon: 'video' },
+    { id: 'lectures', label: '강의 노트', short: '노트', icon: 'notebook' },
+    { id: 'record', label: '공부 기록', short: '기록', icon: 'chart' },
+    { id: 'settings', label: '설정', short: '설정', icon: 'settings' },
   ];
   SQ.route = () => {
     const r = (location.hash || '').replace(/^#\/?/, '').split('/')[0];
@@ -483,9 +495,10 @@
       <div class="streak-card">
         <span class="streak-ic">${SQ.icon('flame', 18)}</span>
         <div><small>연속 공부</small><b>${streak}일째</b></div>
-      </div>`;
+      </div>
+      ${SQ.syncPill ? SQ.syncPill() : ''}`;
     document.getElementById('tabbar').innerHTML = SQ.NAV.map(
-      (n) => `<a href="#/${n.id}" class="tab-i ${r === n.id ? 'on' : ''}">${SQ.icon(n.icon, 20)}<span>${n.label}</span></a>`
+      (n) => `<a href="#/${n.id}" class="tab-i ${r === n.id ? 'on' : ''}" ${r === n.id ? 'aria-current="page"' : ''}>${SQ.icon(n.icon, 20)}<span>${n.short}</span></a>`
     ).join('');
   };
 

@@ -303,6 +303,7 @@
         <div class="stat"><small>연속 공부</small><b>${SQ.streak()}일째</b><span>${SQ.icon('flame', 14)} 끊기지 않게!</span></div>
       </div>
       ${quest}
+      ${SQ.resumeMini ? SQ.resumeMini() : ''}
       ${
         doing.length
           ? `<section class="mini-doing"><div class="sec-h"><h3>보드에서 하는 중</h3><a href="#/board" class="link-btn">보드 열기 ${icon('chevR', 14)}</a></div>

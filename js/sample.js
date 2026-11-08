@@ -126,6 +126,35 @@
     ];
     S.board.find((c) => c.id === 'b_ptr').subjectId = 'cpp';
     S.board.filter((c) => c.status === 'done').forEach((c) => S.doneLog.push({ cardId: c.id, title: c.title, subjectId: c.subjectId, date: c.doneAt }));
+    /* ----- videos (영상 진도) ----- */
+    const yt = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+    const V = (o) => Object.assign({ id: uid(), url: '', title: '', subjectId: '', series: '', lengthSec: null, posSec: 0, part: '', status: 'queue', goal: '', nextNote: '', nextId: '', logs: [], createdAt: SQ.addDays(t, -5), updatedAt: Date.now(), doneAt: null, order: 0 }, o);
+    const vTree = V({ title: '자료구조 7강 · 트리', subjectId: 'knou', series: '방통대 자료구조', url: yt('자료구조 트리'), lengthSec: 3000, goal: '이진 트리 순회 3가지 이해하기', nextNote: '강의 노트 7강 정리', order: 0 });
+    const vAnchor = V({ title: '언리얼 UMG 앵커 완벽 정리', subjectId: 'unreal', series: '언리얼 UI 강좌', url: yt('언리얼 UMG 앵커'), lengthSec: 1500, goal: '화면 크기 바뀌어도 HUD 안 깨지게', order: 1 });
+    S.videos = [
+      V({
+        title: '자료구조 6강 · 스택과 큐', subjectId: 'knou', series: '방통대 자료구조', url: yt('자료구조 스택 큐'), status: 'watching',
+        lengthSec: 3900, posSec: 1930, part: '원형 큐 구현 시작하는 부분', goal: '스택·큐 개념 잡고 원형 큐 코드 이해하기',
+        nextNote: '강의 노트에 정리하기', nextId: vTree.id, updatedAt: Date.now(),
+        logs: [
+          { id: uid(), date: SQ.addDays(t, -1), posSec: 1210, part: '큐의 enqueue / dequeue', note: '', done: false },
+          { id: uid(), date: t, posSec: 1930, part: '원형 큐 구현 시작하는 부분', note: '23:10 원형 큐 그림 다시 보기', done: false },
+        ],
+      }),
+      V({
+        title: '물 머티리얼 만들기 (굴절 + 물결)', subjectId: 'mat', series: '머티리얼 기초', url: yt('언리얼 물 머티리얼'), status: 'watching',
+        lengthSec: 2280, posSec: 845, part: '노멀맵 두 장 섞는 부분', updatedAt: Date.now() - 86400000,
+        logs: [{ id: uid(), date: SQ.addDays(t, -2), posSec: 845, part: '노멀맵 두 장 섞는 부분', note: '', done: false }],
+      }),
+      vTree,
+      vAnchor,
+      V({ title: '블렌더 도넛 튜토리얼 1편', subjectId: 'blender', url: yt('blender donut tutorial'), lengthSec: 1320, goal: '도넛 모델링 따라 하기', order: 2 }),
+      V({
+        title: 'C++ 포인터와 참조 차이', subjectId: 'cpp', url: yt('C++ 포인터 참조 차이'), status: 'done', lengthSec: 1080, posSec: 1080,
+        doneAt: SQ.addDays(t, -1), nextNote: '예제 코드로 복습', logs: [{ id: uid(), date: SQ.addDays(t, -1), posSec: 1080, part: '', note: '', done: true }],
+      }),
+    ];
+
     for (let i = 0; i < 27; i++) S.doneLog.unshift({ cardId: '', title: '지난 공부', subjectId: S.subjects[i % 9].id, date: SQ.addDays(t, -9 - i * 2) });
     return S;
   };
