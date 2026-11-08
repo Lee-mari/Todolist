@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "studyquest",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:/Users/LSA/AppData/Local/Temp/claude/2e67518e03300e28/b930c33e-b507-424a-9df9-7c54304d6c2f/scratchpad/serve.ps1", "-Root", "C:/Users/LSA/Documents/GitHub/Todolist"],
+      "port": 5178
+    }
+  ]
+}
