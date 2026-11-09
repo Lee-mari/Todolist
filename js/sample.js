@@ -53,7 +53,7 @@
         { id: uid(), kind: 'task', start, end, subjectId, title, desc: desc || '', subtasks: (subs || []).map((x) => sub(x, done)), done, spentMin: 0, lectureId: '', boardId: '' },
         extra
       );
-    const brk = (start, end, done) => ({ id: uid(), kind: 'break', start, end, title: '쉬는 시간', done, subtasks: [], spentMin: 0 });
+    const brk = (start, end, done, activity = 'stretch', title = '스트레칭') => ({ id: uid(), kind: 'break', start, end, title, activity, memo: '', done: false, subtasks: [], spentMin: 0 });
 
     const pool = [
       ['09:00', '10:30', 'cpp', 'C++ 클래스 복습', '생성자와 소멸자가 불리는 순서 정리하기', ['예제 따라 치기', '헷갈린 부분 메모']],
@@ -95,6 +95,7 @@
         subtasks: [sub('WBP_HUD 위젯 만들기', true), sub('캔버스 패널에 산소 게이지 놓기'), sub('화면 크기 바뀌어도 안 깨지게 앵커 맞추기')],
         boardId: 'b_hud',
       }),
+      brk('12:30', '13:30', false, 'meal', '점심 + 산책'),
       mk('14:00', '15:30', 'knou', '방통대 자료구조 6강', '스택과 큐. 듣고 나서 강의 노트 탭에 내 말로 정리하기', [], false, { lectureId: 'l_c_ds_6' }),
       mk('16:00', '17:00', 'bp', '블루프린트 연습', '관측기지 문 열고 닫기. 트리거 박스에 닿으면 타임라인 노드로 문 움직이기', [], false),
     ];

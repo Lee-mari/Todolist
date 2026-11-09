@@ -97,10 +97,12 @@
       }
       const busy = SQ.modal.isOpen() || SQ._menu || /INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName);
       if (!busy && ['week', 'today'].includes(SQ.route())) SQ.render();
+      if (SQ.restTick) SQ.restTick();
     }
   }, 1000);
 
   SQ.render();
+  setTimeout(() => SQ.restTick && SQ.restTick(true), 1200);
   if (SQ.firstRun) {
     setTimeout(() => SQ.toast('환영해요! 예시 데이터로 채워 두었어요. 설정에서 언제든 비울 수 있어요'), 600);
   }
