@@ -161,20 +161,6 @@
     </div>`;
   }
 
-  function breakRow(it) {
-    return `
-    <div class="tl-row brk ${it.done ? 'is-done' : ''}" id="it-${it.id}">
-      <div class="tl-time"><b>${it.start}</b></div>
-      <div class="tl-rail"><span class="tl-dot">${icon('coffee', 17)}</span></div>
-      <div class="tl-brk">
-        <span class="brk-t">${esc(it.title || '쉬는 시간')}</span><span class="brk-m">${SQ.dur(SQ.dur2(it))}</span>
-        <span class="sp"></span>
-        <button class="icon-btn hover-only" data-act="editItem" data-id="${it.id}" aria-label="수정">${icon('pencil', 15)}</button>
-        <button class="chk round green" data-act="toggleDone" data-id="${it.id}" aria-pressed="${!!it.done}" aria-label="쉬는 시간 완료">${icon('check', 15)}</button>
-      </div>
-    </div>`;
-  }
-
   function gapRow(from, to, k) {
     return `
     <div class="tl-row gap">
@@ -204,7 +190,7 @@
     items.forEach((it) => {
       const st = SQ.toMin(it.start);
       if (lastEnd != null && st - lastEnd >= 30) html += gapRow(lastEnd, st, k);
-      html += it.kind === 'break' ? breakRow(it) : taskRow(it, k);
+      html += it.kind === 'break' ? SQ.restRow(it, k) : taskRow(it, k);
       lastEnd = Math.max(lastEnd || 0, st + SQ.dur2(it));
     });
     return `<div class="timeline">${html}</div>`;
@@ -244,13 +230,14 @@
   function dayPanel(k) {
     const items = SQ.state.schedules[k] || [];
     const tasks = items.filter((i) => i.kind === 'task');
+    const restMin = items.filter((i) => i.kind === 'break').reduce((a, i) => a + SQ.dur2(i), 0);
     const d = SQ.pkey(k);
     return `
     <section class="day">
       <div class="day-h">
         <div>
           <h2>${SQ.DOW[d.getDay()]}요일, ${d.getMonth() + 1}월 ${d.getDate()}일</h2>
-          <p>일정 ${items.length}개 · 계획 ${SQ.dur(SQ.plannedOn(k))}${tasks.length ? ` · 클리어 ${tasks.filter((t) => t.done).length}/${tasks.length}` : ''}</p>
+          <p>공부 ${tasks.length}개 · 계획 ${SQ.dur(SQ.plannedOn(k))}${tasks.length ? ` · 클리어 ${tasks.filter((t) => t.done).length}/${tasks.length}` : ''}${restMin ? ` · 휴식 ${SQ.dur(restMin)}` : ''}</p>
         </div>
         <div class="row">
           <button class="btn line" data-act="editTimetable" data-k="${k}">${icon('pencil', 16)} 시간표 수정</button>
@@ -386,18 +373,19 @@
           }
         : null,
       body: `
-        <div class="seg-radio" role="radiogroup">
-          <label><input type="radio" name="kind" value="task" ${kind === 'task' ? 'checked' : ''}><span>${icon('book', 15)} 공부</span></label>
-          <label><input type="radio" name="kind" value="break" ${kind === 'break' ? 'checked' : ''}><span>${icon('coffee', 15)} 쉬는 시간</span></label>
+        <div class="kind-pick" role="radiogroup" aria-label="일정 종류">
+          <label class="kp-study"><input type="radio" name="kind" value="task" ${kind === 'task' ? 'checked' : ''}><span>${icon('book', 18)}<b>공부</b><small>집계에 들어가요</small></span></label>
+          <label class="kp-rest"><input type="radio" name="kind" value="break" ${kind === 'break' ? 'checked' : ''}><span><em aria-hidden="true">🌿</em><b>휴식</b><small>집계 없이 푹 쉬기</small></span></label>
         </div>
-        <label class="field"><span>제목</span><input class="input" name="title" maxlength="60" value="${esc(v.title)}" placeholder="예: C++ 포인터 복습"></label>
+        ${SQ.restFields(it && it.kind === 'break' ? it : pre)}
+        <label class="field"><span>제목 <em class="rest-opt">선택 · 비우면 활동 이름</em></span><input class="input" name="title" maxlength="60" value="${esc(v.title)}" placeholder="예: C++ 포인터 복습" data-ph-task="예: C++ 포인터 복습" data-ph-rest="예: 점심 산책"></label>
         <div class="grid3">
           <label class="field"><span>날짜</span><input class="input" type="date" name="date" value="${k}" required></label>
           <label class="field"><span>시작</span><input class="input" type="time" name="start" value="${it ? it.start : start}" required step="300"></label>
           <label class="field"><span>끝</span><input class="input" type="time" name="end" value="${it ? it.end : end}" required step="300"></label>
         </div>
         <div class="quick-dur task-any">
-          ${[15, 30, 60, 90, 120].map((m) => `<button type="button" class="pill" data-dur="${m}">${SQ.dur(m)}</button>`).join('')}
+          ${[10, 15, 20, 30, 60, 90, 120].map((m) => `<button type="button" class="pill ${[10, 20].includes(m) ? 'rest-dur' : [90, 120].includes(m) ? 'task-dur' : ''}" data-dur="${m}">${SQ.dur(m)}</button>`).join('')}
         </div>
         <div class="task-only">
           <label class="field"><span>과목</span><select class="input" name="subjectId">${SQ.subjectOptions(v.subjectId)}</select></label>
@@ -428,6 +416,7 @@
       onOpen(form) {
         const sync = () => {
           form.dataset.kind = form.kind.value;
+          form.title.placeholder = form.title.dataset[form.kind.value === 'break' ? 'phRest' : 'phTask'];
         };
         sync();
         form.querySelectorAll('[name=kind]').forEach((r) => r.addEventListener('change', sync));
@@ -465,7 +454,7 @@
       },
       onSubmit(d) {
         const isBreak = d.kind === 'break';
-        const title = (d.title || '').trim() || (isBreak ? '쉬는 시간' : '');
+        const title = (d.title || '').trim() || (isBreak ? SQ.restAct({ activity: d.activity }).l : '');
         if (!title) return '제목을 적어 주세요';
         if (!d.date) return '날짜를 골라 주세요';
         if (!d.start || !d.end) return '시작과 끝 시간을 정해 주세요';
@@ -500,6 +489,11 @@
           lectureId: isBreak ? '' : d.lectureId || '',
           links,
         };
+        if (isBreak) {
+          base.activity = d.activity || 'free';
+          base.memo = (d.memo || '').trim();
+          base.done = false;
+        }
         let overlap = false;
         SQ.commit((S) => {
           const check = (date, id) => {
