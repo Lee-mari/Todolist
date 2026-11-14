@@ -94,22 +94,32 @@
       mk('10:45', '12:30', 'unreal', '관측기지 HUD 위젯 배치', '위젯 블루프린트로 산소 게이지, 미니맵 자리, 퀘스트 알림 칸을 화면에 배치하기', [], false, {
         subtasks: [sub('WBP_HUD 위젯 만들기', true), sub('캔버스 패널에 산소 게이지 놓기'), sub('화면 크기 바뀌어도 안 깨지게 앵커 맞추기')],
         boardId: 'b_hud',
-        q: { msId: 'ms_1', use: '산소 게이지가 줄어드는 게 화면에 보여야 긴장감이 생겨요', first: 'WBP_HUD 열고 프로그레스 바 하나 드래그하기', ask: true },
+        milestones: [
+          { id: 'ms_1', text: '산소 게이지 보이기', done: true },
+          { id: 'ms_2', text: '미니맵 자리 잡기', done: false },
+          { id: 'ms_3', text: '퀘스트 알림 띄우기', done: false },
+        ],
+        qs: [
+          { id: 'q1', q: '플레이어가 이 화면을 보고 어떤 기분이면 좋겠어?', a: '산소가 줄어드는 게 보여서 살짝 긴장되는 기분' },
+          { id: 'q2', q: '5분 안에 할 수 있는 첫 행동은 뭐야?', a: 'WBP_HUD 열고 프로그레스 바 하나 드래그하기' },
+        ],
+        qAsk: true,
       }),
       brk('12:30', '13:30', false, 'meal', '점심 + 산책'),
       mk('14:00', '15:30', 'knou', '방통대 자료구조 6강', '스택과 큐. 듣고 나서 강의 노트 탭에 내 말로 정리하기', [], false, { lectureId: 'l_c_ds_6' }),
-      mk('16:00', '17:00', 'bp', '블루프린트 연습', '관측기지 문 열고 닫기. 트리거 박스에 닿으면 타임라인 노드로 문 움직이기', ['트리거 박스 놓기', '타임라인 노드 연결'], false, { q: { msId: '', use: '', first: '', ask: true } }),
+      mk('16:00', '17:00', 'bp', '블루프린트 연습', '관측기지 문 열고 닫기. 트리거 박스에 닿으면 타임라인 노드로 문 움직이기', ['트리거 박스 놓기', '타임라인 노드 연결'], false, {
+        milestones: [
+          { id: 'ms_4', text: '트리거 박스 놓기', done: false },
+          { id: 'ms_5', text: '문 열리는 타임라인', done: false },
+          { id: 'ms_6', text: '두 번째 방까지 걷기', done: false },
+        ],
+        qs: [
+          { id: 'q3', q: '오늘 배운 것 중에 몇 번 이정표에 쓸 수 있어?', a: '' },
+          { id: 'q4', q: '5분 안에 할 수 있는 첫 행동은 뭐야?', a: '' },
+        ],
+        qAsk: true,
+      }),
     ];
-    S.weekQuests[ws] = {
-      feel: '혼자서 관측기지를 지켜냈다는 뿌듯함',
-      milestones: [
-        { id: 'ms_1', text: '산소가 줄어드는 긴장감', done: true },
-        { id: 'ms_2', text: '문을 열고 새 구역 발견하기', done: false },
-        { id: 'ms_3', text: '고장 난 장비 고치기', done: false },
-      ],
-      friday: '문 열고 두 번째 방까지 걸어갈 수 있으면 성공',
-      fridayDone: false,
-    };
 
     /* ----- goals ----- */
     S.weekGoals[ws] = { title: '작은 우주 관측기지 만들기' };
