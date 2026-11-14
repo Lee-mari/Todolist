@@ -173,6 +173,7 @@
     subjects: [],
     schedules: {},
     weekGoals: {},
+    weekQuests: {},
     dayGoals: {},
     board: [],
     doneLog: [],

@@ -117,7 +117,12 @@
     if (it.desc) {
       body += isNow ? `<div class="study-box"><small>공부 내용</small><p>${esc(it.desc)}</p></div>` : `<p class="tl-desc">${esc(it.desc)}</p>`;
     }
-    if (expanded) body += subtaskList(it, isNow);
+    const gated = SQ.qGated && SQ.qGated(it);
+    if (gated) body += SQ.qGateBlock(it);
+    else if (SQ.qAnswerChips) body += SQ.qAnswerChips(it, k);
+    if (gated) {
+      /* subtasks stay hidden until the small questions are answered */
+    } else if (expanded) body += subtaskList(it, isNow);
     else if (subs.length)
       body += `<button class="sub-sum" data-act="toggleExpand" data-id="${it.id}">${SQ.segBar(it.done ? subs.length : sd, subs.length, 8)} 쪼갠 할 일 ${it.done ? subs.length : sd} / ${subs.length}${it.done || sd === subs.length ? ' 다 했어요' : ''} ${icon('chevD', 14)}</button>`;
 
@@ -129,7 +134,8 @@
       foot.push(`<a class="chip-btn linkc" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}">${icon(yt ? 'video' : 'link', 15)}<span>${esc(l.name || SQ.platformOf(url))}</span>${icon('arrowR', 13, 'ext')}</a>`);
     });
     if (lec) foot.push(`<button class="chip-btn lec" data-act="openLecture" data-lid="${lec.id}">${icon('notebook', 15)} 강의 노트 열기</button>`);
-    if (!expanded && !subs.length && !it.done) foot.push(`<button class="chip-btn dashed" data-act="addSub" data-id="${it.id}">${icon('plus', 14)} 쪼개기</button>`);
+    if (!gated && !it.done && it.kind === 'task' && !SQ.qAnswered(it.q) && SQ.weekQuest(SQ.weekStart(k))) foot.push(`<button class="chip-btn q" data-act="answerQ" data-id="${it.id}">❓ 오늘의 질문</button>`);
+    if (!gated && !expanded && !subs.length && !it.done) foot.push(`<button class="chip-btn dashed" data-act="addSub" data-id="${it.id}">${icon('plus', 14)} 쪼개기</button>`);
 
     return `
     <div class="tl-row task ${isNow ? 'is-now' : ''} ${it.done ? 'is-done' : ''}" style="${SQ.cvar(s.color)}" id="it-${it.id}">
@@ -272,6 +278,7 @@
     return (
       SQ.pageHead(`${SQ.weekLabel(ws)} · ${SQ.weekRange(ws)}`, ws === SQ.weekStart(t) ? 'This Week' : ws < SQ.weekStart(t) ? 'Past Week' : 'Next Week', right) +
       heroCard(ws) +
+      SQ.questCard(ws) +
       dayStrip(ws, sel) +
       dayPanel(sel)
     );
@@ -296,6 +303,7 @@
         <div class="stat"><small>연속 공부</small><b>${SQ.streak()}일째</b><span>${SQ.icon('flame', 14)} 끊기지 않게!</span></div>
       </div>
       ${quest}
+      ${SQ.questCard(SQ.weekStart(t), true)}
       ${SQ.resumeMini ? SQ.resumeMini() : ''}
       ${
         doing.length
@@ -401,6 +409,7 @@
           </div>
           <label class="field"><span>쪼갠 할 일 <em>한 줄에 하나씩</em></span><textarea class="input" name="subs" rows="3" placeholder="WBP_HUD 위젯 만들기&#10;캔버스 패널에 게이지 놓기">${esc((v.subtasks || []).map((s) => s.text).join('\n'))}</textarea></label>
           ${lecOpts ? `<label class="field"><span>강의 노트 연결 <em>선택</em></span><select class="input" name="lectureId">${lecOpts}</select></label>` : ''}
+          ${SQ.smallQFields(k, it && it.kind === 'task' ? it.q : { ask: !!SQ.state.settings.askFirst }, true)}
         </div>
         ${
           it
@@ -430,6 +439,7 @@
             form.end.value = SQ.fromMin(SQ.toMin(form.start.value || '09:00') + +b.dataset.dur);
           })
         );
+        SQ.bindSmallQ(form, {});
         const box = form.querySelector('.links-ed');
         const addRow = (l) => {
           box.insertAdjacentHTML('beforeend', linkRow(l || {}));
@@ -489,6 +499,10 @@
           lectureId: isBreak ? '' : d.lectureId || '',
           links,
         };
+        if (!isBreak) {
+          base.q = SQ.readSmallQ(d, it && it.q, true);
+          if (!it) SQ.state.settings.askFirst = base.q.ask;
+        }
         if (isBreak) {
           base.activity = d.activity || 'free';
           base.memo = (d.memo || '').trim();
