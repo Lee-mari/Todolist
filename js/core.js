@@ -435,7 +435,7 @@
   SQ.units = (items) => {
     let done = 0, total = 0;
     items.filter((i) => i.kind === 'task').forEach((it) => {
-      const subs = it.subtasks || [];
+      const subs = it.milestones || [];
       if (subs.length) {
         total += subs.length;
         done += it.done ? subs.length : subs.filter((s) => s.done).length;
@@ -502,7 +502,26 @@
     ).join('');
   };
 
+  // schedule "쪼갠 할 일" (subtasks) became 이정표 (milestones): move any old data over once
+  SQ.migrateItems = function (S) {
+    let changed = false;
+    Object.values(S.schedules || {}).forEach((arr) =>
+      arr.forEach((it) => {
+        if (it.subtasks && it.subtasks.length) {
+          it.milestones = (it.milestones || []).concat(it.subtasks.map((s) => ({ id: s.id || SQ.uid(), text: s.text, detail: '', done: !!s.done })));
+          changed = true;
+        }
+        if (it.subtasks) {
+          delete it.subtasks;
+          changed = true;
+        }
+      })
+    );
+    return changed;
+  };
+
   SQ.render = function () {
+    if (SQ.migrateItems(SQ.state)) SQ.save(true);
     const r = SQ.route();
     SQ.closeMenu();
     SQ.renderNav();

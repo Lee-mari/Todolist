@@ -120,7 +120,7 @@
       <div class="stats3">
         <div class="stat"><small>${isCur ? '이번 주' : '그 주'} 공부 시간</small><b>${SQ.dur(total)}</b><span>하루 평균 ${SQ.dur(past.length ? total / past.length : 0)}</span></div>
         <div class="stat"><small>계획 대비</small><b>${ratio}%</b><span>계획 ${SQ.dur(plannedWeek)}</span></div>
-        <div class="stat"><small>클리어한 쪼개기</small><b>${u.done}개</b><span>전체 ${u.total}개</span></div>
+        <div class="stat"><small>통과한 이정표</small><b>${u.done}개</b><span>전체 ${u.total}개</span></div>
       </div>
       <section class="card chart">
         <div class="sec-h"><h3>${isCur ? '이번 주' : '그 주'} 요일별</h3><small class="muted-t">진한 색 = 다 끝난 날 · 연한 색 = 오늘(진행 중) · 막대를 누르면 수정</small></div>

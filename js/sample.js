@@ -50,10 +50,10 @@
     /* ----- schedules ----- */
     const mk = (start, end, subjectId, title, desc, subs, done, extra = {}) =>
       Object.assign(
-        { id: uid(), kind: 'task', start, end, subjectId, title, desc: desc || '', subtasks: (subs || []).map((x) => sub(x, done)), done, spentMin: 0, lectureId: '', boardId: '' },
+        { id: uid(), kind: 'task', start, end, subjectId, title, desc: desc || '', milestones: (subs || []).map((x) => sub(x, done)), done, spentMin: 0, lectureId: '', boardId: '' },
         extra
       );
-    const brk = (start, end, done, activity = 'stretch', title = '스트레칭') => ({ id: uid(), kind: 'break', start, end, title, activity, memo: '', done: false, subtasks: [], spentMin: 0 });
+    const brk = (start, end, done, activity = 'stretch', title = '스트레칭') => ({ id: uid(), kind: 'break', start, end, title, activity, memo: '', done: false, spentMin: 0 });
 
     const pool = [
       ['09:00', '10:30', 'cpp', 'C++ 클래스 복습', '생성자와 소멸자가 불리는 순서 정리하기', ['예제 따라 치기', '헷갈린 부분 메모']],
@@ -74,7 +74,7 @@
         const items = picks.map((p, j) => {
           const done = isPast && hash(k + j) % 5 !== 0;
           const it = mk(p[0], p[1], p[2], p[3], p[4], p[5], done);
-          if (isPast && !done && it.subtasks.length) it.subtasks[0].done = true;
+          if (isPast && !done && it.milestones.length) it.milestones[0].done = true;
           return it;
         });
         S.schedules[k] = items;
@@ -92,12 +92,11 @@
       mk('09:00', '10:30', 'cpp', 'C++ 포인터 복습', '경일 수업 3강 복습. 포인터와 참조(&)가 어떻게 다른지 예제로 정리하기', ['포인터 선언 예제', '참조와 비교', '정리 노트 쓰기'], true),
       brk('10:30', '10:45', true),
       mk('10:45', '12:30', 'unreal', '관측기지 HUD 위젯 배치', '위젯 블루프린트로 산소 게이지, 미니맵 자리, 퀘스트 알림 칸을 화면에 배치하기', [], false, {
-        subtasks: [sub('WBP_HUD 위젯 만들기', true), sub('캔버스 패널에 산소 게이지 놓기'), sub('화면 크기 바뀌어도 안 깨지게 앵커 맞추기')],
         boardId: 'b_hud',
         milestones: [
-          { id: 'ms_1', text: '산소 게이지 보이기', done: true },
-          { id: 'ms_2', text: '미니맵 자리 잡기', done: false },
-          { id: 'ms_3', text: '퀘스트 알림 띄우기', done: false },
+          { id: 'ms_1', text: '산소 게이지', detail: 'WBP_HUD에 프로그레스 바를 놓고 산소 값(0~1)을 바인딩해서 줄어드는 게 보이게', done: true },
+          { id: 'ms_2', text: '미니맵 자리', detail: '오른쪽 위에 사이즈 박스로 빈 자리만 먼저 잡아 두기. 실제 미니맵은 다음 주', done: false },
+          { id: 'ms_3', text: '퀘스트 알림', detail: '텍스트 블록 하나 + 페이드 인/아웃 애니메이션', done: false },
         ],
         qs: [
           { id: 'q1', q: '플레이어가 이 화면을 보고 어떤 기분이면 좋겠어?', a: '산소가 줄어드는 게 보여서 살짝 긴장되는 기분' },
@@ -109,9 +108,9 @@
       mk('14:00', '15:30', 'knou', '방통대 자료구조 6강', '스택과 큐. 듣고 나서 강의 노트 탭에 내 말로 정리하기', [], false, { lectureId: 'l_c_ds_6' }),
       mk('16:00', '17:00', 'bp', '블루프린트 연습', '관측기지 문 열고 닫기. 트리거 박스에 닿으면 타임라인 노드로 문 움직이기', ['트리거 박스 놓기', '타임라인 노드 연결'], false, {
         milestones: [
-          { id: 'ms_4', text: '트리거 박스 놓기', done: false },
-          { id: 'ms_5', text: '문 열리는 타임라인', done: false },
-          { id: 'ms_6', text: '두 번째 방까지 걷기', done: false },
+          { id: 'ms_4', text: '트리거 놓기', detail: '문 앞에 Box Trigger 놓고 OnActorBeginOverlap 이벤트 연결', done: false },
+          { id: 'ms_5', text: '문 타임라인', detail: 'Timeline 노드로 1초 동안 문 위치를 위로 이동', done: false },
+          { id: 'ms_6', text: '방 2 도착', done: false },
         ],
         qs: [
           { id: 'q3', q: '오늘 배운 것 중에 몇 번 이정표에 쓸 수 있어?', a: '' },
