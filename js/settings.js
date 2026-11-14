@@ -62,7 +62,7 @@
           </div>
         </section>
       </div>
-      <p class="foot-note">Study Quest · 쪼개서 하나씩 클리어하는 공부 스케줄러</p>`;
+      <p class="foot-note">Study Quest · 이정표를 하나씩 지나가는 공부 스케줄러</p>`;
   };
 
   A.saveName = () => {

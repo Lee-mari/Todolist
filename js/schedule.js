@@ -34,7 +34,7 @@
         </svg>
         <span class="ring-pct">${pct}%</span>
         <div class="hero-stat">
-          <small>쪼갠 할 일</small>
+          <small>이정표</small>
           <b>${u.done} / ${u.total}</b>
           <small>${u.total === 0 ? '아직 없어요' : left === 0 ? '전부 클리어!' : `${left}개만 더!`}</small>
         </div>
@@ -58,36 +58,6 @@
       .join('')}</nav>`;
   }
 
-  function subtaskList(it, isNow) {
-    const subs = it.subtasks || [];
-    const firstOpen = subs.findIndex((s) => !s.done);
-    const done = subs.filter((s) => s.done).length;
-    const adding = ui.addingSub === it.id;
-    return `
-      <div class="subs">
-        <div class="subs-h" ${subs.length ? '' : 'hidden'}>
-          <span>${icon('scissors', 15)} 쪼갠 할 일</span>
-          <span class="subs-p">${SQ.segBar(done, subs.length, 8)} ${done} / ${subs.length}</span>
-        </div>
-        <ul>
-          ${subs
-            .map(
-              (s, i) => `<li class="sub ${s.done ? 'done' : ''} ${isNow && i === firstOpen ? 'cur' : ''}">
-                <label><input type="checkbox" ${s.done ? 'checked' : ''} data-act="toggleSub" data-id="${it.id}" data-sid="${s.id}"><span class="cb">${icon('check', 13)}</span><span class="sub-t">${esc(s.text)}</span></label>
-                ${isNow && i === firstOpen ? '<em class="sub-now">지금 이거!</em>' : ''}
-                <button class="icon-btn xs sub-del" data-act="delSub" data-id="${it.id}" data-sid="${s.id}" aria-label="삭제">${icon('x', 14)}</button>
-              </li>`
-            )
-            .join('')}
-        </ul>
-        ${
-          adding
-            ? `<div class="sub-add"><input type="text" class="input sm" id="sub-input" data-key="subInput" data-id="${it.id}" placeholder="쪼갠 할 일을 적고 Enter" maxlength="80"><button class="btn sm primary" data-act="subAddConfirm" data-id="${it.id}">추가</button><button class="btn sm ghost" data-act="subAddCancel">닫기</button></div>`
-            : `<button class="link-btn" data-act="addSub" data-id="${it.id}">${icon('plus', 15)} 쪼개기</button>`
-        }
-      </div>`;
-  }
-
   function taskRow(it, k) {
     const s = SQ.subj(it.subjectId);
     const t = SQ.today();
@@ -95,9 +65,8 @@
     const st = SQ.toMin(it.start), en = st + SQ.dur2(it);
     const timerOn = SQ.state.timer && SQ.state.timer.id === it.id;
     const isNow = !it.done && ((k === t && nm >= st && nm < en) || timerOn);
-    const expanded = isNow || ui.expanded[it.id] || ui.addingSub === it.id;
-    const subs = it.subtasks || [];
-    const sd = subs.filter((x) => x.done).length;
+    const expanded = isNow || !!ui.expanded[it.id];
+    const ms = it.milestones || [];
     const pct = k === t && nm >= st && nm < en ? ((nm - st) / (en - st)) * 100 : 0;
     const lec = it.lectureId && SQ.state.lectures.find((l) => l.id === it.lectureId);
 
@@ -108,7 +77,6 @@
     const tools = `
       <div class="tools ${isNow ? 'show' : ''}">
         ${it.done ? '' : `<button class="icon-btn" data-act="timer" data-id="${it.id}" title="${timerOn ? '타이머 멈추기' : '집중 타이머 시작'}" aria-label="${timerOn ? '타이머 멈추기' : '집중 타이머 시작'}">${icon(timerOn ? 'pause' : 'play', 16)}</button>`}
-        <button class="icon-btn" data-act="addSub" data-id="${it.id}" title="쪼개기" aria-label="쪼개기">${icon('scissors', 16)}</button>
         <button class="icon-btn" data-act="editItem" data-id="${it.id}" title="수정" aria-label="수정">${icon('pencil', 16)}</button>
         <button class="icon-btn" data-act="moreItem" data-id="${it.id}" title="더 보기" aria-label="더 보기">${icon('more', 16)}</button>
       </div>`;
@@ -118,14 +86,9 @@
       body += isNow ? `<div class="study-box"><small>공부 내용</small><p>${esc(it.desc)}</p></div>` : `<p class="tl-desc">${esc(it.desc)}</p>`;
     }
     const gated = SQ.qGated(it);
-    body += SQ.msPath(it);
-    if (gated) body += SQ.qGateBlock(it);
-    else body += SQ.qAnswerList(it);
-    if (gated) {
-      /* subtasks stay hidden until the small questions are answered */
-    } else if (expanded) body += subtaskList(it, isNow);
-    else if (subs.length)
-      body += `<button class="sub-sum" data-act="toggleExpand" data-id="${it.id}">${SQ.segBar(it.done ? subs.length : sd, subs.length, 8)} 쪼갠 할 일 ${it.done ? subs.length : sd} / ${subs.length}${it.done || sd === subs.length ? ' 다 했어요' : ''} ${icon('chevD', 14)}</button>`;
+    body += SQ.qInline(it, expanded);
+    if (!gated) body += SQ.msPath(it, isNow);
+    else if (ms.length) body += `<p class="ms-locked">🔒 이정표 ${ms.length}개 · 질문에 답하면 열려요</p>`;
 
     const foot = [];
     (it.links || []).forEach((l) => {
@@ -135,9 +98,7 @@
       foot.push(`<a class="chip-btn linkc" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(url)}">${icon(yt ? 'video' : 'link', 15)}<span>${esc(l.name || SQ.platformOf(url))}</span>${icon('arrowR', 13, 'ext')}</a>`);
     });
     if (lec) foot.push(`<button class="chip-btn lec" data-act="openLecture" data-lid="${lec.id}">${icon('notebook', 15)} 강의 노트 열기</button>`);
-    const qChip = SQ.qFootChip(it);
-    if (qChip) foot.push(qChip);
-    if (!gated && !expanded && !subs.length && !it.done) foot.push(`<button class="chip-btn dashed" data-act="addSub" data-id="${it.id}">${icon('plus', 14)} 쪼개기</button>`);
+    if (!ms.length && !it.done) foot.push(`<button class="chip-btn dashed" data-act="editItem" data-id="${it.id}">${icon('flag', 14)} 이정표 세우기</button>`);
 
     return `
     <div class="tl-row task ${isNow ? 'is-now' : ''} ${it.done ? 'is-done' : ''}" style="${SQ.cvar(s.color)}" id="it-${it.id}">
@@ -187,7 +148,7 @@
       <div class="empty">
         <div class="empty-ic">${icon('calendar', 26)}</div>
         <h3>아직 일정이 없어요</h3>
-        <p>공부할 시간을 블록으로 쌓아 보세요. 쪼개서 하나씩 클리어하면 돼요.</p>
+        <p>공부할 시간을 블록으로 쌓아 보세요. 이정표를 하나씩 지나가면 돼요.</p>
         <div class="row-c">
           <button class="btn primary" data-act="addItem" data-k="${k}">${icon('plus', 16)} 일정 추가</button>
           ${hasPrev ? `<button class="btn line" data-act="copyFrom" data-from="${prev}" data-k="${k}">${icon('copy', 16)} 지난주 ${SQ.DOW[SQ.dow(k)]}요일 가져오기</button>` : ''}
@@ -221,7 +182,7 @@
             ? `<h3>${esc(g.title)} <button class="icon-btn xs" data-act="editDayGoal" data-k="${k}" aria-label="목표 수정">${icon('pencil', 14)}</button></h3>`
             : `<h3><button class="link-btn big" data-act="editDayGoal" data-k="${k}">${icon('plus', 16)} ${lbl}의 목표 정하기</button></h3>`
         }
-        <p>${u.total ? `쪼갠 할 일 ${u.total}개 중 ${u.done}개 클리어` : '일정을 추가하면 진행도가 보여요'}</p>
+        <p>${u.total ? `이정표 ${u.total}개 중 ${u.done}개 통과` : '일정을 추가하면 진행도가 보여요'}</p>
       </div>
       <div class="goal-time">
         <small>${lbl} 공부한 시간</small>
@@ -358,7 +319,6 @@
       title: pre.title || '',
       subjectId: pre.subjectId || '',
       desc: pre.desc || '',
-      subtasks: pre.subtasks || [],
       lectureId: pre.lectureId || '',
       links: pre.links || [],
     };
@@ -407,9 +367,8 @@
               ${watchVids.length ? `<select class="input sm pick-video" aria-label="영상 진도에서 가져오기"><option value="">영상 진도에서 가져오기…</option>${watchVids.map((x) => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select>` : ''}
             </div>
           </div>
-          <label class="field"><span>쪼갠 할 일 <em>한 줄에 하나씩</em></span><textarea class="input" name="subs" rows="3" placeholder="WBP_HUD 위젯 만들기&#10;캔버스 패널에 게이지 놓기">${esc((v.subtasks || []).map((s) => s.text).join('\n'))}</textarea></label>
           ${lecOpts ? `<label class="field"><span>강의 노트 연결 <em>선택</em></span><select class="input" name="lectureId">${lecOpts}</select></label>` : ''}
-          ${SQ.questFields(it)}
+          ${SQ.questFields(it, (pre.subtasks || []).map((s) => s.text))}
         </div>
         ${
           it
@@ -482,12 +441,6 @@
         }
         const subId = isBreak ? '' : SQ.resolveSubject(d);
         if (d.subjectId === '__new' && !subId) return '새 과목 이름을 적어 주세요';
-        const lines = isBreak ? [] : String(d.subs || '').split('\n').map((x) => x.trim()).filter(Boolean);
-        const old = it ? it.subtasks || [] : [];
-        const subtasks = lines.map((text) => {
-          const o2 = old.find((x) => x.text === text);
-          return { id: o2 ? o2.id : SQ.uid(), text, done: o2 ? o2.done : false };
-        });
         const base = {
           kind: isBreak ? 'break' : 'task',
           title,
@@ -495,7 +448,7 @@
           end: d.end,
           subjectId: subId,
           desc: isBreak ? '' : (d.desc || '').trim(),
-          subtasks,
+          milestones: [],
           lectureId: isBreak ? '' : d.lectureId || '',
           links,
         };
@@ -528,7 +481,7 @@
             const found = SQ.findItem(it.id);
             const cur = found.it;
             Object.assign(cur, base);
-            if (subtasks.length && subtasks.every((s) => s.done)) cur.done = true;
+            if (cur.milestones.length && cur.milestones.every((s) => s.done)) cur.done = true;
             if (found.k !== d.date) {
               S.schedules[found.k] = S.schedules[found.k].filter((x) => x.id !== cur.id);
               (S.schedules[d.date] = S.schedules[d.date] || []).push(cur);
@@ -543,7 +496,8 @@
             } else if (+d.repeat > 0) dates = Array.from({ length: +d.repeat }, (_, i) => SQ.addDays(d.date, i * 7));
             dates.forEach((date, i) => {
               const item = Object.assign({ id: SQ.uid(), done: false, spentMin: 0, boardId: pre.boardId || '' }, base, {
-                subtasks: base.subtasks.map((s) => ({ id: SQ.uid(), text: s.text, done: false })),
+                milestones: base.milestones.map((s) => Object.assign({}, s, { id: SQ.uid(), done: false })),
+                qs: (base.qs || []).map((x) => Object.assign({}, x, { a: i === 0 ? x.a : '' })),
               });
               (S.schedules[date] = S.schedules[date] || []).push(item);
               if (i === 0) check(date, item.id);
@@ -568,7 +522,7 @@
     const src = S.schedules[from] || [];
     const dst = (S.schedules[to] = S.schedules[to] || []);
     src.forEach((x) =>
-      dst.push(Object.assign({}, x, { id: SQ.uid(), done: false, spentMin: 0, subtasks: (x.subtasks || []).map((s) => ({ id: SQ.uid(), text: s.text, done: false })) }))
+      dst.push(Object.assign({}, x, { id: SQ.uid(), done: false, spentMin: 0, milestones: (x.milestones || []).map((s) => Object.assign({}, s, { id: SQ.uid(), done: false })), qs: (x.qs || []).map((q) => Object.assign({}, q, { a: '' })) }))
     );
     return src.length;
   }
@@ -607,7 +561,7 @@
         S.timer = null;
       }
       it.done = willDone;
-      if (willDone) (it.subtasks || []).forEach((s) => (s.done = true));
+      if (willDone) (it.milestones || []).forEach((s) => (s.done = true));
     });
     if (willDone && f.it.kind === 'task') SQ.celebrate(`"${f.it.title}" 클리어!`);
   };
@@ -615,73 +569,7 @@
   A.toggleExpand = (el) => {
     const id = el.dataset.id;
     ui.expanded[id] = !ui.expanded[id];
-    if (!ui.expanded[id] && ui.addingSub === id) ui.addingSub = null;
     SQ.render();
-  };
-
-  A.toggleSub = (el) => {
-    const id = el.dataset.id, sid = el.dataset.sid;
-    let allDone = false, title = '';
-    SQ.commit(() => {
-      const it = SQ.findItem(id).it;
-      const s = it.subtasks.find((x) => x.id === sid);
-      s.done = !s.done;
-      if (!s.done) it.done = false;
-      else if (it.subtasks.every((x) => x.done) && !it.done) {
-        it.done = true;
-        allDone = true;
-        title = it.title;
-        if (SQ.state.timer && SQ.state.timer.id === it.id) {
-          it.spentMin = (it.spentMin || 0) + SQ.liveTimerMin(it);
-          SQ.state.timer = null;
-        }
-      }
-    });
-    if (allDone) SQ.celebrate(`쪼갠 할 일을 다 했어요! "${title}" 클리어`);
-  };
-
-  A.delSub = (el) =>
-    SQ.commit(() => {
-      const it = SQ.findItem(el.dataset.id).it;
-      it.subtasks = it.subtasks.filter((x) => x.id !== el.dataset.sid);
-    }, { undo: '쪼갠 할 일을 지웠어요' });
-
-  A.addSub = (el) => {
-    ui.addingSub = el.dataset.id;
-    ui.expanded[el.dataset.id] = true;
-    ui.focus = '#sub-input';
-    SQ.render();
-  };
-  A.subAddCancel = () => {
-    ui.addingSub = null;
-    SQ.render();
-  };
-  A.subAddConfirm = (el) => {
-    const inp = document.getElementById('sub-input');
-    addSubFromInput(el.dataset.id, inp);
-  };
-  function addSubFromInput(id, inp) {
-    const text = inp.value.trim();
-    if (!text) {
-      inp.focus();
-      return;
-    }
-    ui.focus = '#sub-input';
-    SQ.commit(() => {
-      const it = SQ.findItem(id).it;
-      (it.subtasks = it.subtasks || []).push({ id: SQ.uid(), text, done: false });
-      it.done = false;
-    });
-  }
-  SQ.keyHandlers.subInput = (e, el) => {
-    if (e.key === 'Enter' && !e.isComposing) {
-      e.preventDefault();
-      addSubFromInput(el.dataset.id, el);
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      ui.addingSub = null;
-      SQ.render();
-    }
   };
 
   A.timer = (el) => {
@@ -740,7 +628,7 @@
             (S.schedules[d.date] = S.schedules[d.date] || []).push(cur.it);
           } else {
             (S.schedules[d.date] = S.schedules[d.date] || []).push(
-              Object.assign({}, cur.it, { id: SQ.uid(), done: false, spentMin: 0, subtasks: (cur.it.subtasks || []).map((s) => ({ id: SQ.uid(), text: s.text, done: false })) })
+              Object.assign({}, cur.it, { id: SQ.uid(), done: false, spentMin: 0, milestones: (cur.it.milestones || []).map((s) => Object.assign({}, s, { id: SQ.uid(), done: false })), qs: (cur.it.qs || []).map((q) => Object.assign({}, q, { a: '' })) })
             );
           }
         }, { toast: `${SQ.longDate(d.date)}로 ${move ? '옮겼어요' : '복사했어요'}` });
