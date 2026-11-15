@@ -240,6 +240,7 @@
       </div>`;
     return (
       SQ.pageHead(`${SQ.weekLabel(ws)} · ${SQ.weekRange(ws)}`, ws === SQ.weekStart(t) ? 'This Week' : ws < SQ.weekStart(t) ? 'Past Week' : 'Next Week', right) +
+      (SQ.planBanner ? SQ.planBanner(ws) : '') +
       heroCard(ws) +
       dayStrip(ws, sel) +
       dayPanel(sel)
@@ -259,6 +260,7 @@
     const doing = SQ.state.board.filter((c) => c.status === 'doing');
     return `
       ${SQ.pageHead(SQ.longDate(t), 'Today', `<button class="btn line" data-act="goWeek">${icon('calendar', 16)} 주간 보기</button>`, `${greet}${name ? ', ' + esc(name) + '님' : ''}! ${left.length ? `남은 일정 ${left.length}개, 하나씩 클리어해요.` : items.length ? '오늘 일정을 전부 클리어했어요 🎉' : '오늘 할 공부를 추가해 볼까요?'}`)}
+      ${SQ.planBanner ? SQ.planBanner() : ''}
       <div class="stats3">
         <div class="stat"><small>오늘 공부한 시간</small><b data-tick="studied" data-k="${t}">${SQ.durShort(SQ.studiedOn(t))}</b><span>계획 ${SQ.dur(SQ.plannedOn(t))}</span></div>
         <div class="stat"><small>다음 일정</small><b class="ellipsis">${next ? esc(next.title) : '없음'}</b><span>${next ? `${next.start} – ${next.end}` : '여유롭게 쉬어요'}</span></div>
