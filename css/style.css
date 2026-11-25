@@ -1087,3 +1087,5 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; backgro
   .pb-act .btn { flex: 1; justify-content: center; }
   .pb-days { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 }
+.pb-force { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.pb-force small { color: var(--muted); font-size: 13px; }
